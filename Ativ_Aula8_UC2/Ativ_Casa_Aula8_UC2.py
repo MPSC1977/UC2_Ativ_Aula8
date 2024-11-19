@@ -11,29 +11,32 @@ try:
     tb_vendas = pd.read_csv('tb_Vendas2017_Miranda.csv', sep=';', encoding='iso8859-1')
     tb_cadastro_produtos = pd.read_csv('tb_CadastroProdutos2017_Miranda.csv', sep=';', encoding='iso8859-1')
 
-    # print(tb_vendas.columns)
-    # print(tb_cadastro_produtos.columns)
-
     df_vendas = tb_vendas[['ID Produto', 'Quantidade Vendida']]
     df_cadastro_produtos = tb_cadastro_produtos[['ID Produto', 'Preco Unitario', 'Categoria']]
-    print(df_vendas.columns)
 
     df_cadastro_produtos.loc[:, 'Preco Unitario'] = df_cadastro_produtos['Preco Unitario'].str.replace(',', '.').astype(float)
 
-    df_tabelas_concat = pd.merge(df_cadastro_produtos, df_vendas, on= 'ID Produto')
-    print(df_tabelas_concat)
-
-    df_tabelas_concat_agrup = df_tabelas_concat.groupby(['Categoria']).sum(['Quantidade Vendida']).reset_index()
-    print(df_tabelas_concat_agrup)
+    print('\nDados obtidos com sucesso!')
 
 except ImportError as e:
     print(f'Erro ao obter dados: {e}')
     exit()
 
+try:
+    df_tabelas_concat = pd.merge(df_cadastro_produtos, df_vendas, on= 'ID Produto')
+
+    df_tabelas_concat['Valor Total'] = df_tabelas_concat['Quantidade Vendida'] * df_tabelas_concat['Preco Unitario']
+
+    df_tabelas_concat_agrup = df_tabelas_concat.groupby('ID Produto').agg({'Quantidade Vendida': 'sum', 'Valor Total': 'sum'}).reset_index()
+    print()
+    print(df_tabelas_concat_agrup.head(10))
+
+except ImportError as e:
+    print(f'Erro ao obter dados: {e}')
+    exit()
 
 try:
-   array_vendas = np.array(df_tabelas_concat_agrup['Quantidade Vendida'])
-   print(array_vendas)
+   array_vendas = np.array(df_tabelas_concat_agrup['Valor Total'])
 
    media_qtde_vendida = np.mean(array_vendas)
    mediana_qtde_vendida = np.median(array_vendas)
@@ -50,8 +53,8 @@ try:
    limite_superior = q3 + (1.5 * iqr)
    limite_inferior = q1 - (1.5 * iqr)
 
-   df_vendas_outliers_inferiores = df_vendas[df_vendas['Quantidade Vendida'] < limite_inferior]
-   df_vendas_outliers_superiores = df_vendas[df_vendas['Quantidade Vendida'] > limite_superior]
+   df_vendas_outliers_inferiores = df_tabelas_concat_agrup[df_tabelas_concat_agrup['Valor Total'] < limite_inferior]
+   df_vendas_outliers_superiores = df_tabelas_concat_agrup[df_tabelas_concat_agrup['Valor Total'] > limite_superior]
 
    print('\nMEDIDAS DE TENDÊNCIA CENTRAL')
    print(30*'=')
@@ -61,20 +64,20 @@ try:
     
    print('\nMEDIDAS DE DISPERSÃO')
    print(20*'=')
-   print(f'Máximo: {maximo}')
-   print(f'Mínimo: {minimo}')
+   print(f'Máximo: {maximo:.2f}')
+   print(f'Mínimo: {minimo:.2f}')
    print(f'Amplitude total: {amplitude}')
 
    print('\nMEDIDAS DE POSIÇÃO')
    print(20*'=')
-   print(f'Mínimo: {minimo}')
-   print(f'Limite inferior: {limite_inferior}')
-   print(f'Q1: {q1}')
-   print(f'Q2: {q2}')
-   print(f'Q3: {q3}')
-   print(f'IQR: {iqr}')
-   print(f'Limite superior: {limite_superior}')
-   print(f'Máximo: {maximo}')
+   print(f'Mínimo: {minimo:.2f}')
+   print(f'Limite inferior: {limite_inferior:.2f}')
+   print(f'Q1: {q1:.2f}')
+   print(f'Q2: {q2:.2f}')
+   print(f'Q3: {q3:.2f}')
+   print(f'IQR: {iqr:.2f}')
+   print(f'Limite superior: {limite_superior:.2f}')
+   print(f'Máximo: {maximo:.2f}')
 
    print('\nOUTLIERS')
    print(25*'=')
@@ -84,14 +87,14 @@ try:
    if len(df_vendas_outliers_inferiores) == 0:
         print('Não existem outliers inferiores!')
    else:
-        print(df_vendas_outliers_inferiores.sort_values(by='Quantidade Vendida', ascending=True))
+        print(df_vendas_outliers_inferiores.sort_values(by='Valor Total', ascending=True))
 
    print('\nOutliers superiores: ')
    print(20*'=')
    if len(df_vendas_outliers_superiores) == 0:
         print('Não existe outliers superiores!')
    else:
-        print(df_vendas_outliers_superiores.sort_values(by='Quantidade Vendida', ascending=False))
+        print(df_vendas_outliers_superiores.sort_values(by='Valor Total', ascending=False))
 
    print('\nCONCLUSÃO DA ANÁLISE: ')
    print('\n ')
